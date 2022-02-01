@@ -61,6 +61,13 @@ var _ = SkipDescribeIf(
 			)
 
 			BeforeAll(func() {
+				DeployCiliumOptionsAndDNS(kubectl, ciliumFilename,
+					map[string]string{
+						"debug.verbose":        "datapath", // https://github.com/cilium/cilium/issues/16399
+						"tunnel":               "disabled",
+						"autoDirectNodeRoutes": "true",
+					})
+
 				frr = applyFRRTemplate(kubectl, ni)
 				kubectl.ApplyDefault(frr).ExpectSuccess("Unable to apply rendered template %s", frr)
 
