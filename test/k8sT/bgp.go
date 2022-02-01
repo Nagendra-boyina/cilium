@@ -27,12 +27,14 @@ var _ = SkipDescribeIf(
 		var (
 			kubectl        *helpers.Kubectl
 			ciliumFilename string
-			ni             *nodesInfo
+			ni             *helpers.NodesInfo
+			err            error
 		)
 
 		BeforeAll(func() {
 			kubectl = helpers.CreateKubectl(helpers.K8s1VMName(), logger)
-			ni = getNodesInfo(kubectl)
+			ni, err = helpers.GetNodesInfo(kubectl)
+			Expect(err).Should(BeNil(), "Cannot get nodes info")
 			ciliumFilename = helpers.TimestampFilename("cilium.yaml")
 		})
 
@@ -142,7 +144,7 @@ var _ = SkipDescribeIf(
 				Eventually(func() string {
 					return kubectl.ExecInHostNetNS(
 						context.TODO(),
-						ni.outsideNodeName,
+						ni.OutsideNodeName,
 						"ip route",
 					).GetStdOut().String()
 				}, 30*time.Second, 1*time.Second).Should(ContainSubstring(lbIP),
@@ -162,7 +164,7 @@ var _ = SkipDescribeIf(
 				kubectl.Patch(helpers.DefaultNamespace, "service", lbSvcName,
 					fmt.Sprintf(
 						`{"spec": {"loadBalancerSourceRanges": ["1.1.1.0/24", "%s/32"]}}`,
-						ni.outsideIP))
+						ni.OutsideIP))
 				time.Sleep(5 * time.Second)
 				testCurlFromOutside(kubectl, ni, url, 10, false)
 			})
